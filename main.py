@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-WEATHER_API_KEY = os.environ.get('WEATHER_API_KEY')
+WEATHER_API_KEY = os.environ.get('WEATHER_API_KEY', False)
 KM_IN_DEGREE = 111.139
 ZOOM = 10
 DEFAULT_SQUARE_RANGE = 30
@@ -114,7 +114,9 @@ def get_cities_from_file(file_name):
 
 
 if __name__ == '__main__':
-
+    if WEATHER_API_KEY is False:
+        print('You can save API key in .env file. Enter API key now:')
+        WEATHER_API_KEY = input()
     while True:
         print('\n\nEnter city to request temperature (ex: "Moscow")\n'
               'or "city;range" to find average temperature (ex: "Tver;30")\n'
