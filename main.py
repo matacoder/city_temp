@@ -7,6 +7,7 @@ load_dotenv()
 WEATHER_API_KEY = os.environ.get('WEATHER_API_KEY')
 KM_IN_DEGREE = 111.139
 ZOOM = 10
+DEFAULT_SQUARE_RANGE = 30
 
 
 class City:
@@ -15,7 +16,7 @@ class City:
     average temperature of square area
     """
 
-    def __init__(self, name, square_range):
+    def __init__(self, name, square_range=DEFAULT_SQUARE_RANGE):
         """
         :param name: City name in english or local language
         :param square_range: Distance to right border of square
@@ -24,7 +25,12 @@ class City:
         self.square_range = float(square_range)
         self.raw_data = self.get_city_by_name()
         self.coordinates = self.raw_data.get('coord')
-        self.temp = self.raw_data.get('main').get('temp')
+        main_section = self.raw_data.get('main', 'City not found!')
+        if main_section != 'City not found!':
+            self.temp = main_section.get('temp', 'City not found')
+        else:
+            # TODO: Find a better way than default 0.0 Raise!
+            self.temp = 0.0
         self.square_range_data = {}
 
     def get_city_by_name(self):
@@ -95,30 +101,44 @@ def get_cities_from_file(file_name):
     :param file_name: file name
     :return: list of City class objects
     """
-    with open(file_name, 'r', encoding='utf8') as f:
-        data = f.readlines()
-    cities = []
-    for item in data:
-        item = item.rstrip().split(';')
-        print(item)
-        cities.append(City(item[0], item[1]))
-    return cities
+    try:
+        with open(file_name, 'r', encoding='utf8') as f:
+            data = f.readlines()
+        cities = []
+        for item in data:
+            item = item.rstrip().split(';')
+            cities.append(City(item[0], int(item[1])))
+        return cities
+    except FileNotFoundError:
+        return False
 
 
 if __name__ == '__main__':
-    # Test city creation
-    moscow = City(name='Москва', square_range='100')
-    # Test if temperature is requested
-    print(f'Temp in {moscow.name} is {moscow.temp}')
-    # Test if average temperature is calculated (limited to 25 requests via free API)
-    # print(f'Avg temp in square around {moscow.name} is {moscow.get_square_temperature():.1f}')
 
-    # Test list object list creation
-    list_of_city_objects = get_cities_from_file('cities.txt')
-    # Sort by city temp. Original task ask for average sorting but free API has limitations
-    list_of_city_objects = sorted(list_of_city_objects, key=lambda city: city.temp)
-    # list_of_city_objects = sorted(list_of_city_objects, key=lambda city: city.get_square_temperature())
+    while True:
+        print('\n\nEnter city to request temperature (ex: "Moscow")\n'
+              'or "city;range" to find average temperature (ex: "Tver;30")\n'
+              'or filename.txt (";"-separated) to sort by average (ex: "cities.txt")\n'
+              'or "q" to exit')
+        user_value = input()
 
-    # Print list of sorted objects in nice way thanks to __repr__ method
-    for city_obj in list_of_city_objects:
-        print(city_obj)
+        if user_value == 'q':
+            break
+        elif user_value[-4:] == '.txt':
+            list_of_city_objects = get_cities_from_file(user_value)
+            if list_of_city_objects is not False:
+                list_of_city_objects = sorted(list_of_city_objects, key=lambda city: city.get_square_temperature())
+                for city_obj in list_of_city_objects:
+                    print(city_obj)
+            else:
+                print('File not found')
+        elif ';' in user_value:
+            current_city, range_ = user_value.split(';')
+            current_city_obj = City(name=current_city, square_range=range_)
+            print(f'Temp in {current_city_obj.name} is {current_city_obj.temp}')
+            print(
+                f'Avg temp in square around {current_city_obj.name} is {current_city_obj.get_square_temperature():.1f}')
+        else:
+            current_city = user_value
+            current_city_obj = City(name=current_city)
+            print(f'Temp in {current_city_obj.name} is {current_city_obj.temp}')
