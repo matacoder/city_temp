@@ -4,7 +4,7 @@
 
 ## How to use
 
-Save your https://openweathermap.org API key in .env
+Save your https://openweathermap.org API key in `.env` file
 
 `WEATHER_API_KEY=PUT_IT_HERE`
 
